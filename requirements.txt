@@ -1,0 +1,8 @@
+langchain-core
+langchain
+langchain-anthropic
+langgraph
+langgraph-checkpoint-sqlite
+tavily-python
+pydantic
+python-dotenv
