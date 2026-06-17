@@ -1,7 +1,8 @@
+langchain-core
 langchain
-wikipedia
-langchain-community
-langchain-openai
 langchain-anthropic
-python-dotenv
+langgraph
+langgraph-checkpoint-sqlite
+tavily-python
 pydantic
+python-dotenv
