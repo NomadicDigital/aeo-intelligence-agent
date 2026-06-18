@@ -14,8 +14,7 @@ graph TD
     Tech --> Report
     Vis --> Report
 
-    Report --> Email[Email Delivery Node]
-    Email --> END((END))
+    Report --> END((END))
 ```
 
 ---
