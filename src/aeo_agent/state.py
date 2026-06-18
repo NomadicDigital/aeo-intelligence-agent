@@ -1,8 +1,14 @@
-from typing import TypedDict, List, Dict, Any
+from typing import TypedDict, List, Dict, Any, Annotated
+import operator
 
 class AgentState(TypedDict):
     # Input
     url: str
+    email: str
+
+    # System State
+
+    errors: Annotated[List[str], operator.add]
 
     # Research
     business_name: str
@@ -14,7 +20,7 @@ class AgentState(TypedDict):
     llms_txt: Dict[str, Any]
     llms_full_txt: Dict[str, Any]
     robots_txt: Dict[str, Any]
-    schema: Dict[str]
+    schema: Dict[str, Any]
 
     # Visibility agent
     prospect_visibility: Dict[str, int]
@@ -24,5 +30,4 @@ class AgentState(TypedDict):
     overall_score: int
     high_level_summary: str
     pdf_path: str
-    email: str
 
