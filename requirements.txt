@@ -6,3 +6,4 @@ langgraph-checkpoint-sqlite
 tavily-python
 pydantic
 python-dotenv
+firecrawl-py
