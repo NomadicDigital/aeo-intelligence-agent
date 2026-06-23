@@ -37,7 +37,7 @@ def route_after_research(state:AgentState) -> str:
     description = state["description"]
     competitors = state["competitors"]
     core_queries = state["core_queries"]
-    if not (business_name) and not (description) and not (competitors) and not core_queries:
+    if not (business_name) or not (description) or not (competitors) or not core_queries:
         return "skip"
     else:
          return "continue"
@@ -57,9 +57,8 @@ graph.add_conditional_edges(
         "skip": "report"
     }
 )
-
-graph.add_edge("research", "visibility_analysis")
-
+graph.add_edge("technical_audit", "visibility_analysis")
+graph.add_edge("visibility_analysis", "report")
 
 # --------------------------------------------------
 # Stage 4: Fan-In / Report Generation

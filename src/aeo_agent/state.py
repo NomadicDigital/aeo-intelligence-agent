@@ -3,7 +3,7 @@ import operator
 
 class AgentState(TypedDict):
     # Input
-    url: str
+    input_url: str
     email: str
 
     # System State
