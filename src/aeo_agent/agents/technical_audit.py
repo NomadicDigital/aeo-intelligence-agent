@@ -1,9 +1,12 @@
 from state import AgentState
 from typing import Dict
 import requests
+from bs4 import BeautifulSoup
+import json
 
 AI_CRAWLERS = ["GPTBot", "ClaudeBot", "Google-Extended", "PerplexityBot", "OAI-SearchBot"]
 TIMEOUT_TIME = 10
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
 
 def find_robot_rule(agent, robots_txt_contents) -> str:
     """
@@ -37,7 +40,7 @@ def check_robots_txt(input_url) -> Dict:
     
     # Step 1: Fetch robots.txt
     try:
-        r = requests.get(robots_url, timeout=TIMEOUT_TIME)
+        r = requests.get(robots_url, timeout=TIMEOUT_TIME, headers=HEADERS)
     except requests.exceptions.Timeout:
         error_msg = f"Robots timed out"
         return {
@@ -140,7 +143,73 @@ def check_llm_files(input_url, file_name, state_key):
             }
         }
 
+def check_for_schema(raw_html) -> Dict:
+    """
+    Function for checking the website's RAW Html output for Schema. If it exists, 
+    we store the types in the state.
+    """
+    # Step 1: Parse HTML with BeautifulSoup
+    parsed_html = BeautifulSoup(raw_html, "html.parser")
+    schemas = parsed_html.find_all('script', type='application/ld+json')
+    found_schemas = []
+    for schema in schemas:
+        try:
+            data = json.loads(schema.string)
+            # Handle both single objects and arrays of schema objects
+            if isinstance(data, dict):
+                schema_type = data.get('@type')
+                if schema_type:
+                    found_schemas.append(schema_type)
+            elif isinstance(data, list):
+                for item in data:
+                    schema_type = item.get('@type')
+                    if schema_type:
+                        found_schemas.append(schema_type)
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    if found_schemas:
+        return {
+            "schema": 
+            {
+                "exists": True,
+                "schema_type": found_schemas
+            }
+        }
+    else:
+        return {
+            "schema":
+            {
+                "exists": False
+            }
+        }
+    
+def strip_errors(d):
+    """
+    Helper function to remove any 'errors' from the other states.
+    """
+    return {k: v for k, v in d.items() if k != "errors"}
+
 def technical_audit(state:AgentState) -> AgentState:
+    """
+    The main Technical Node in our LangGraph execution.
+    Extracts key data including robots.txt, llms-txt and Schema to provide as a key input to measure a 
+    website's overall AEO optimisations levels.
+    """
     extracted_robots_txt = check_robots_txt(state['input_url'])
     extracted_llms_txt = check_llm_files(state['input_url'], 'llms.txt', 'llms_txt')
-    extracted_llms_full_txt = check_llm_files(state['input_url'], 'llms_full.txt', 'llms_full_txt')
+    extracted_llms_full_txt = check_llm_files(state['input_url'], 'llms-full.txt', 'llms_full_txt')
+    extracted_schema = check_for_schema(state['raw_html'])
+    errors = []
+    for result in [extracted_robots_txt, extracted_llms_txt, extracted_llms_full_txt, extracted_schema]:
+        if "errors" in result:
+            errors.extend(result["errors"])
+    final_update = {
+        **strip_errors(extracted_robots_txt),
+        **strip_errors(extracted_llms_txt),
+        **strip_errors(extracted_llms_full_txt),
+        **strip_errors(extracted_schema),
+    }
+    print(final_update)
+    if errors:
+        final_update["errors"] = errors
+    return final_update
