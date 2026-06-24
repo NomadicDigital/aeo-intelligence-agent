@@ -41,6 +41,7 @@ def scrape_url(url) -> str:
     """
     data = crawler_app.scrape(url)
     status_code = data.metadata.status_code
+    print(data)
     if status_code == 200:
         return data
     elif status_code in {401, 402}:
@@ -79,13 +80,22 @@ def research(state:AgentState) -> AgentState:
                 """
                 You're an leading market research assistant, acting as the main researcher in an AEO (Answer Engine Optimisation) project. 
                 You have been passed a raw markdown file from a Firecrawl scrape. Please analyse the content and extract key business details. 
-                Use your internal knowledge base to identify competitors if the the scraped text doesn't list them explicitly"
+                Use your internal knowledge base to identify competitors if the the scraped text doesn't list them explicitly
                 """
             )
-        print("🧠 Parsing scraped content with structured Claude-3.5-Sonnet...")
+        
+        user_prompt = (
+            f"Here is some scraped data from the website:\n\n"
+            f"Website title: {data.metadata.title}\n"
+            f"Description: {data.metadata.description}\n\n"
+            f"Content:\n{data.markdown[:20000]}"
+        )
+        
+        print("🧠 Parsing scraped content with structured Claude model...")
+        print(f"Data being passed is {data.markdown[:2000]}")
         extraction: ResearchExtraction = structured_llm.invoke([
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Here is the website markdown content:\n\n{data.markdown[:20000]}"}
+            {"role": "user", "content": user_prompt}
         ])
 
         print("✅ Extraction successful!")
@@ -95,7 +105,7 @@ def research(state:AgentState) -> AgentState:
         print("Competitors:", extraction.competitors)
         print("Queries:", extraction.core_queries)
         
-        return { # <-- FIX 2: Return only the extracted fields dict
+        return {
             "business_name": extraction.business_name,
             "description": extraction.description,
             "competitors": extraction.competitors,
