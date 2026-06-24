@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Dict, Any, Annotated
+from typing import TypedDict, List, Dict, Any, Annotated, Optional
 import operator
 
 class AgentState(TypedDict):
@@ -15,6 +15,7 @@ class AgentState(TypedDict):
     description: str
     competitors: List[str]
     core_queries: List[str]
+    raw_html: Optional[str]
 
     # Technical Audit
     llms_txt: Dict[str, Any]
