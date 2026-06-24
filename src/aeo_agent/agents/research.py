@@ -26,7 +26,7 @@ def request_with_retry(url, max_attempts=5):
     and jitter to safely bypass rate limits and transient server failures.
     """
     for attempt in range(max_attempts):
-        resp = crawler_app.scrape(url)
+        resp = crawler_app.scrape(url, formats=['markdown', 'rawHtml'])
         if resp.metadata.status_code < 400 or resp.metadata.status_code not in RETRYABLE_STATUSES:
             return resp
         retry_after = resp.headers.get("Retry-After")
@@ -39,9 +39,9 @@ def scrape_url(url) -> str:
     Orchestrates the scraping action and classifies errors into system exceptions
     vs. operational state errors as per system design.
     """
-    data = crawler_app.scrape(url)
+    data = crawler_app.scrape(url, formats=['markdown', "rawHtml"])
     status_code = data.metadata.status_code
-    print(data)
+    print(f"RAW_HTML: {data.raw_html}")
     if status_code == 200:
         return data
     elif status_code in {401, 402}:
@@ -60,7 +60,7 @@ def scrape_url(url) -> str:
 def research(state:AgentState) -> AgentState:
     """
     The main Research Node in our LangGraph execution.
-    Analyzes the target website, runs structured extraction, and returns state updates.
+    Analyses the target website, runs structured extraction, and returns state updates.
     """
     print(f"\n--- 🕵️‍♂️ Starting Research Node for {state['input_url']} ---")
     # Initialise Firecrawl and scrape the URL
@@ -109,7 +109,8 @@ def research(state:AgentState) -> AgentState:
             "business_name": extraction.business_name,
             "description": extraction.description,
             "competitors": extraction.competitors,
-            "core_queries": extraction.core_queries
+            "core_queries": extraction.core_queries,
+            "raw_html": data.raw_html
         }
     
     except Exception as e:
