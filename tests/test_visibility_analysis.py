@@ -4,7 +4,7 @@ sys.path.insert(0, 'src/aeo_agent')
 from graph import app
 
 result = app.invoke({
-    "input_url": "https://www.fallowfieldscamping.com/",
+    "input_url": "https://www.fallowfieldscamping.com",
     "email": "",
     "errors": [],
     "business_name": "",
@@ -19,10 +19,10 @@ result = app.invoke({
     "competitor_visibility": {},
     "overall_score": 0,
     "high_level_summary": "",
+    "pdf_path": "",
+    "raw_html": None
 })
 
-print("Business:", result['business_name'])
-print("Description:", result['description'])
-print("Competitors:", result['competitors'])
-print("Queries:", result['core_queries'])
-print("Errors:", result['errors'])
+print("\n=== VISIBILITY RESULTS ===")
+print("Prospect visibility:", result['prospect_visibility'])
+print("Competitor visibility:", result['competitor_visibility'])

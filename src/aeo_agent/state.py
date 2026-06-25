@@ -6,8 +6,7 @@ class AgentState(TypedDict):
     input_url: str
     email: str
 
-    # System State
-
+    # System
     errors: Annotated[List[str], operator.add]
 
     # Research
@@ -24,11 +23,10 @@ class AgentState(TypedDict):
     schema: Dict[str, Any]
 
     # Visibility agent
-    prospect_visibility: Dict[str, int]
-    competitor_visibility: Dict[str, Dict[str, int]]
+    prospect_visibility: Dict[str, Any]
+    competitor_visibility: Dict[str, int]
 
     # Report Agent
     overall_score: int
     high_level_summary: str
     pdf_path: str
-
