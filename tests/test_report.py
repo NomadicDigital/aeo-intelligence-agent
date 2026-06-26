@@ -17,7 +17,6 @@ result = app.invoke({
     "schema": {},
     "prospect_visibility": {},
     "competitor_visibility": {},
-    "pdf_path": "",
     "raw_html": None,
     "key_improvements": [],
     "visibility_insight": "",
@@ -26,9 +25,9 @@ result = app.invoke({
     "high_level_summary": ""
 })
 
-print("\n=== TECHNICAL AUDIT RESULTS ===")
-print("robots_txt:", result['robots_txt'])
-print("llms_txt:", result['llms_txt'])
-print("llms_full_txt:", result['llms_full_txt'])
-print("schema:", result['schema'])
-print("errors:", result['errors'])
+print("\n=== REPORT RESULTS ===")
+print("Overall Score:", result['overall_score'])
+print("High Level Summary:", result['high_level_summary'])
+print("Key Improvements:", result['key_improvements'])
+print("Visibility Insight:", result['visibility_insight'])
+print("Quick Win:", result['quick_win'])

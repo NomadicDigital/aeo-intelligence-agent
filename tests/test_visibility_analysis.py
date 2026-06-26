@@ -17,10 +17,12 @@ result = app.invoke({
     "schema": {},
     "prospect_visibility": {},
     "competitor_visibility": {},
+    "raw_html": None,
+    "key_improvements": [],
+    "visibility_insight": "",
+    "quick_win": "",
     "overall_score": 0,
-    "high_level_summary": "",
-    "pdf_path": "",
-    "raw_html": None
+    "high_level_summary": ""
 })
 
 print("\n=== VISIBILITY RESULTS ===")
