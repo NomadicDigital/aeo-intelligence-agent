@@ -18,7 +18,10 @@ result = app.invoke({
     "prospect_visibility": {},
     "competitor_visibility": {},
     "overall_score": 0,
-    "high_level_summary": "",
+    "key_improvements": [],
+    "visibility_insight": "",
+    "quick_win": "",
+    "high_level_summary": ""
 })
 
 print("Business:", result['business_name'])
