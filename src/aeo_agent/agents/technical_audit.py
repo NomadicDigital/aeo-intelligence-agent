@@ -155,19 +155,37 @@ def check_for_schema(raw_html) -> Dict:
     for schema in schemas:
         try:
             data = json.loads(schema.string)
-            # Handle both single objects and arrays of schema objects
             if isinstance(data, dict):
-                schema_type = data.get('@type')
-                if schema_type:
-                    found_schemas.append(schema_type)
+                if '@graph' in data:
+                    # Handle @graph pattern
+                    for item in data['@graph']:
+                        schema_type = item.get('@type')
+                        if schema_type:
+                            if isinstance(schema_type, list):
+                                found_schemas.extend(schema_type)
+                            else:
+                                found_schemas.append(schema_type)
+                elif '@type' in data:
+                    # Handle single object pattern
+                    schema_type = data.get('@type')
+                    if schema_type:
+                        if isinstance(schema_type, list):
+                            found_schemas.extend(schema_type)
+                        else:
+                            found_schemas.append(schema_type)
             elif isinstance(data, list):
+                # Handle array of schema objects
                 for item in data:
                     schema_type = item.get('@type')
                     if schema_type:
-                        found_schemas.append(schema_type)
+                        if isinstance(schema_type, list):
+                            found_schemas.extend(schema_type)
+                        else:
+                            found_schemas.append(schema_type)
         except (json.JSONDecodeError, AttributeError):
             continue
     if found_schemas:
+        found_schemas = list(set(found_schemas))
         return {
             "schema": 
             {
