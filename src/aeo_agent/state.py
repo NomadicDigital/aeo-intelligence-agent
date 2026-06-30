@@ -32,3 +32,4 @@ class AgentState(TypedDict):
     key_improvements: List[str]
     visibility_insight: str
     quick_win: str
+    pdf_path: str

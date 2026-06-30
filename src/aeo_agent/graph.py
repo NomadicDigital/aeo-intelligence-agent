@@ -60,15 +60,6 @@ graph.add_conditional_edges(
 graph.add_edge("technical_audit", "visibility_analysis")
 graph.add_edge("visibility_analysis", "report")
 
-# --------------------------------------------------
-# Stage 4: Fan-In / Report Generation
-# --------------------------------------------------
-
-# Wait for both parallel branches to complete
-
-graph.add_edge("technical_audit", "report")
-graph.add_edge("visibility_analysis", "report")
-
 
 # --------------------------------------------------
 # Stage 5: End
