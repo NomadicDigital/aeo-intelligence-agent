@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, -apple-system, sans-serif;
+      font-size: 13px;
+      color: #1a1a2e;
+      background: #ffffff;
+      padding: 40px 48px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px solid #4f46e5;
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+    .header-left h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #4f46e5;
+      letter-spacing: -0.5px;
+    }
+    .header-left p {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .header-right {
+      text-align: right;
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    .header-right .label { font-weight: 600; color: #374151; }
+
+    /* ── Score band ── */
+    .score-band {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 12px;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 28px;
+      color: #fff;
+    }
+    .score-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 3px solid rgba(255,255,255,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .score-number {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .score-denom {
+      font-size: 12px;
+      opacity: 0.75;
+    }
+    .score-text h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .score-text p {
+      font-size: 12.5px;
+      opacity: 0.9;
+      line-height: 1.55;
+      max-width: 560px;
+    }
+
+    /* ── Two-column grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #6b7280;
+      margin-bottom: 14px;
+    }
+
+    /* ── Tech audit checklist ── */
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 12.5px;
+    }
+    .check-row:last-child { margin-bottom: 0; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .badge-pass { background: #d1fae5; color: #065f46; }
+    .badge-fail { background: #fee2e2; color: #991b1b; }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .check-label { font-weight: 500; color: #374151; }
+    .check-detail { font-size: 11px; color: #6b7280; margin-top: 1px; }
+
+    /* ── Visibility bars ── */
+    .vis-row {
+      margin-bottom: 10px;
+      font-size: 12.5px;
+    }
+    .vis-row:last-child { margin-bottom: 0; }
+    .vis-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .vis-name { font-weight: 500; color: #374151; }
+    .vis-pct  { font-weight: 600; color: #4f46e5; }
+    .vis-track {
+      background: #f3f4f6;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .vis-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #4f46e5;
+    }
+    .vis-fill-comp {
+      height: 100%;
+      border-radius: 4px;
+      background: #a5b4fc;
+    }
+    .vis-prospect .vis-fill { background: #4f46e5; }
+
+    /* ── Key improvements ── */
+    .improvements-card { margin-bottom: 20px; }
+    .improvement-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .improvement-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .improvement-num {
+      width: 22px;
+      height: 22px;
+      background: #eef2ff;
+      color: #4f46e5;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Quick win ── */
+    .quick-win-card {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #f59e0b;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+    }
+    .quick-win-card .card-title { color: #92400e; }
+    .quick-win-card p { font-size: 12.5px; line-height: 1.55; color: #374151; }
+
+    /* ── Visibility insight ── */
+    .insight-card {
+      background: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-size: 12.5px;
+      color: #374151;
+      line-height: 1.55;
+    }
+    .insight-card .card-title { color: #5b21b6; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 14px;
+      font-size: 10.5px;
+      color: #9ca3af;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>AEO Intelligence Report</h1>
+      <p>Answer Engine Optimisation Analysis</p>
+    </div>
+    <div class="header-right">
+      <div><span class="label">Business: </span>{{ business_name }}</div>
+      <div><span class="label">URL: </span>{{ input_url }}</div>
+      <div><span class="label">Generated: </span>{{ generated_date }}</div>
+    </div>
+  </div>
+
+  <!-- Score + Summary -->
+  <div class="score-band">
+    <div class="score-circle">
+      <span class="score-number">{{ overall_score }}</span>
+      <span class="score-denom">/ 10</span>
+    </div>
+    <div class="score-text">
+      <h2>Overall AEO Score</h2>
+      <p>{{ high_level_summary }}</p>
+    </div>
+  </div>
+
+  <!-- Tech Audit + Visibility -->
+  <div class="grid">
+
+    <!-- Technical Audit -->
+    <div class="card">
+      <div class="card-title">Technical Audit</div>
+
+      <!-- robots.txt -->
+      {% if robots_txt.exists %}
+        {% if robots_txt.blocked_ai_crawlers %}
+          <div class="check-row">
+            <span class="badge badge-warn">Warn</span>
+            <div>
+              <div class="check-label">robots.txt</div>
+              <div class="check-detail">Blocking: {{ robots_txt.blocked_ai_crawlers | join(', ') }}</div>
+            </div>
+          </div>
+        {% else %}
+          <div class="check-row">
+            <span class="badge badge-pass">Pass</span>
+            <div class="check-label">robots.txt — AI crawlers allowed</div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="check-row">
+          <span class="badge badge-fail">Missing</span>
+          <div class="check-label">robots.txt</div>
+        </div>
+      {% endif %}
+
+      <!-- llms.txt -->
+      <div class="check-row">
+        {% if llms_txt.exists %}
+          <span class="badge badge-pass">Pass</span>
+          <div class="check-label">llms.txt — present</div>
+        {% else %}
+          <span class="badge badge-fail">Missing</span>
+          <div class="check-label">llms.txt</div>
+        {% endif %}
+      </div>
+
+      <!-- llms-full.txt -->
+      <div class="check-row">
+        {% if llms_full_txt.exists %}
+          <span class="badge badge-pass">Pass</span>
+          <div class="check-label">llms-full.txt — present</div>
+        {% else %}
+          <span class="badge badge-fail">Missing</span>
+          <div class="check-label">llms-full.txt</div>
+        {% endif %}
+      </div>
+
+      <!-- Schema -->
+      <div class="check-row">
+        {% if schema.exists %}
+          <span class="badge badge-pass">Pass</span>
+          <div>
+            <div class="check-label">Structured Schema</div>
+            {% if schema.schema_type %}
+              <div class="check-detail">Types: {{ schema.schema_type | join(', ') }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <span class="badge badge-fail">Missing</span>
+          <div class="check-label">Structured Schema</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Visibility -->
+    <div class="card">
+      <div class="card-title">AI Visibility</div>
+
+      <div class="vis-row vis-prospect">
+        <div class="vis-header">
+          <span class="vis-name">{{ business_name }}</span>
+          <span class="vis-pct">{{ prospect_score }}%</span>
+        </div>
+        <div class="vis-track"><div class="vis-fill" style="width: {{ prospect_score }}%;"></div></div>
+      </div>
+
+      {% for comp_name, comp_score in competitor_visibility.items() %}
+        <div class="vis-row">
+          <div class="vis-header">
+            <span class="vis-name">{{ comp_name }}</span>
+            <span class="vis-pct" style="color: #6b7280;">{{ comp_score | round | int }}%</span>
+          </div>
+          <div class="vis-track"><div class="vis-fill-comp" style="width: {{ comp_score }}%;"></div></div>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- Visibility insight -->
+  <div class="insight-card">
+    <div class="card-title">Visibility Insight</div>
+    {{ visibility_insight }}
+  </div>
+
+  <!-- Key improvements -->
+  <div class="card improvements-card">
+    <div class="card-title">Key Improvements</div>
+    {% for item in improvements %}
+      <div class="improvement-item">
+        <div class="improvement-num">{{ loop.index }}</div>
+        <div>{{ item }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Quick win -->
+  <div class="quick-win-card">
+    <div class="card-title">⚡ Quick Win</div>
+    <p>{{ quick_win }}</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Confidential — prepared by AEO Intelligence Agent</span>
+    <span>{{ generated_date }}</span>
+  </div>
+
+</body>
+</html>

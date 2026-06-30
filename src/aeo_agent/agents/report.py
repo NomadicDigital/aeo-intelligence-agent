@@ -2,6 +2,7 @@ from state import AgentState
 from pydantic import BaseModel, Field
 from typing import List
 from langchain_anthropic import ChatAnthropic
+from pdf_generator import generate_pdf
 
 class ReportOutput(BaseModel):
     overall_score: int = Field(description="Overall AEO score between 0-10 based on the provided initial_score. Do not deviate significantly from the initial_score provided.")
@@ -87,13 +88,37 @@ def report(state:AgentState) -> AgentState:
         print("Visibility Insight:", extraction.visibility_insight)
         print("Quick Win:", extraction.quick_win)
 
-        return {
+        result = {
             "overall_score": extraction.overall_score,
             "high_level_summary": extraction.high_level_summary,
             "key_improvements": extraction.key_improvements,
             "visibility_insight": extraction.visibility_insight,
-            "quick_win": extraction.quick_win
+            "quick_win": extraction.quick_win,
         }
+
+        try:
+            pdf_path = generate_pdf(
+                business_name=state["business_name"],
+                input_url=state["input_url"],
+                overall_score=extraction.overall_score,
+                high_level_summary=extraction.high_level_summary,
+                key_improvements=extraction.key_improvements,
+                visibility_insight=extraction.visibility_insight,
+                quick_win=extraction.quick_win,
+                robots_txt=state.get("robots_txt", {}),
+                llms_txt=state.get("llms_txt", {}),
+                llms_full_txt=state.get("llms_full_txt", {}),
+                schema=state.get("schema", {}),
+                prospect_visibility=state.get("prospect_visibility", {}),
+                competitor_visibility=state.get("competitor_visibility", {}),
+            )
+            print(f"📄 PDF saved to: {pdf_path}")
+            result["pdf_path"] = pdf_path
+        except Exception as e:
+            print(f"⚠️ PDF generation failed: {e}")
+            result["errors"] = [f"PDF generation failed: {str(e)}"]
+
+        return result
         
 
     except Exception as e:

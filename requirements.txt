@@ -7,3 +7,5 @@ tavily-python
 pydantic
 python-dotenv
 firecrawl-py
+weasyprint
+jinja2
