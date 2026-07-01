@@ -1,5 +1,8 @@
 from state import AgentState
+import logging
 from langchain_anthropic import ChatAnthropic
+
+logger = logging.getLogger(__name__)
 
 def visibility_analysis(state:AgentState) -> AgentState:
     prospect_mentions = 0
@@ -9,12 +12,12 @@ def visibility_analysis(state:AgentState) -> AgentState:
     llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
     for query in state['core_queries']:
         try:
-            print(f"Query being passed is {query}")
+            logger.debug("Querying visibility for: %s", query)
             response = llm.invoke([{"role": "user", "content": query}])
-            print(f"Respone {response.content}")
+            logger.debug("Response: %s", response.content)
             if state['business_name'].lower() in response.content.lower():
                 query_breakdown[query] = 1
-                prospect_mentions+=1 
+                prospect_mentions+=1
             else:
                 query_breakdown[query] = 0
             for competitor in state['competitors']:
@@ -23,7 +26,8 @@ def visibility_analysis(state:AgentState) -> AgentState:
 
         except Exception as e:
             error_msg = f"LLM response failed for query: {query}: {str(e)}"
-            query_breakdown[query] = 0  
+            logger.error(error_msg)
+            query_breakdown[query] = 0
             errors.append(error_msg)
 
     if state['core_queries']:
