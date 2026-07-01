@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -5,6 +6,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, HttpUrl
 
 from graph import app as graph_app
+
+logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.getLogger("agents").setLevel(logging.INFO)
 
 app = FastAPI()
 
