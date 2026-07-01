@@ -1,0 +1,58 @@
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, HttpUrl
+
+from graph import app as graph_app
+
+app = FastAPI()
+
+class ReportRequest(BaseModel):
+    url: HttpUrl
+
+@app.get("/")
+def root():
+    return {"Hello" : "World"}
+
+@app.post("/generate_report")
+async def generate_report(request: ReportRequest):
+
+    url_str = str(request.url)
+
+    try:
+        result = await graph_app.ainvoke({
+            "input_url": url_str,
+            "email": "",
+            "errors": [],
+            "business_name": "",
+            "description": "",
+            "competitors": [],
+            "core_queries": [],
+            "llms_txt": {},
+            "llms_full_txt": {},
+            "robots_txt": {},
+            "schema": {},
+            "prospect_visibility": {},
+            "competitor_visibility": {},
+            "raw_html": None,
+            "key_improvements": [],
+            "visibility_insight": "",
+            "quick_win": "",
+            "overall_score": 0,
+            "high_level_summary": "",
+            "pdf_path": ""
+        })
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Report generation failed: {e}") from e
+
+    pdf_path = result.get("pdf_path")
+    if not pdf_path or not Path(pdf_path).exists():
+        errors = result.get("errors") or ["Report generation did not produce a PDF."]
+        raise HTTPException(status_code=422, detail="; ".join(errors))
+
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=Path(pdf_path).name,
+    )
