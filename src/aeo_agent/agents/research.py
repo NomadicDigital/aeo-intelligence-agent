@@ -1,4 +1,5 @@
 from state import AgentState
+import logging
 import os
 from dotenv import load_dotenv
 from firecrawl import Firecrawl
@@ -10,9 +11,22 @@ from langchain_anthropic import ChatAnthropic
 
 load_dotenv()
 
-crawler_api_key = os.getenv("FIRECRAWL_API_KEY")
-crawler_app = Firecrawl(api_key=crawler_api_key)
+logger = logging.getLogger(__name__)
+
 RETRYABLE_STATUSES = {408, 429, 500, 502, 503, 504}
+
+_crawler_app = None
+
+
+def get_crawler_app() -> Firecrawl:
+    """
+    Lazily constructs the Firecrawl client so importing this module doesn't
+    require FIRECRAWL_API_KEY to be set (e.g. in tests).
+    """
+    global _crawler_app
+    if _crawler_app is None:
+        _crawler_app = Firecrawl(api_key=os.getenv("FIRECRAWL_API_KEY"))
+    return _crawler_app
 
 class ResearchExtraction(BaseModel):
     business_name: str = Field(description="The formal or highly recognizable name of the business.")
@@ -26,7 +40,7 @@ def request_with_retry(url, max_attempts=5):
     and jitter to safely bypass rate limits and transient server failures.
     """
     for attempt in range(max_attempts):
-        resp = crawler_app.scrape(url, formats=['markdown', 'rawHtml'])
+        resp = get_crawler_app().scrape(url, formats=['markdown', 'rawHtml'])
         if resp.metadata.status_code < 400 or resp.metadata.status_code not in RETRYABLE_STATUSES:
             return resp
         retry_after = resp.headers.get("Retry-After")
@@ -39,9 +53,8 @@ def scrape_url(url) -> str:
     Orchestrates the scraping action and classifies errors into system exceptions
     vs. operational state errors as per system design.
     """
-    data = crawler_app.scrape(url, formats=['markdown', "rawHtml"])
+    data = get_crawler_app().scrape(url, formats=['markdown', "rawHtml"])
     status_code = data.metadata.status_code
-    print(f"RAW_HTML: {data.raw_html}")
     if status_code == 200:
         return data
     elif status_code in {401, 402}:
@@ -62,49 +75,53 @@ def research(state:AgentState) -> AgentState:
     The main Research Node in our LangGraph execution.
     Analyses the target website, runs structured extraction, and returns state updates.
     """
-    print(f"\n--- 🕵️‍♂️ Starting Research Node for {state['input_url']} ---")
+    logger.info("Starting research node for %s", state['input_url'])
+
     # Initialise Firecrawl and scrape the URL
-    data = scrape_url(state['input_url'])
-    print(f"Scraped data received.")
+    try:
+        data = scrape_url(state['input_url'])
+    except Exception as e:
+        error_msg = f"Could not scrape {state['input_url']}: {str(e)}"
+        logger.error(error_msg)
+        return {"errors": [error_msg]}
+
     # PATH 1: Scrape Failed
     if data is None:
         error_msg = f"Could not scrape {state['input_url']}"
-        print(f"❌ {error_msg}")
+        logger.error(error_msg)
         return {"errors": [error_msg]}
-    
+
     #PATH 2: Scrape succeeded, pass to LLM
     try:
         llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
         structured_llm = llm.with_structured_output(ResearchExtraction)
         system_prompt = (
                 """
-                You're an leading market research assistant, acting as the main researcher in an AEO (Answer Engine Optimisation) project. 
-                You have been passed a raw markdown file from a Firecrawl scrape. Please analyse the content and extract key business details. 
+                You're an leading market research assistant, acting as the main researcher in an AEO (Answer Engine Optimisation) project.
+                You have been passed a raw markdown file from a Firecrawl scrape. Please analyse the content and extract key business details.
                 Use your internal knowledge base to identify competitors if the the scraped text doesn't list them explicitly
                 """
             )
-        
+
         user_prompt = (
             f"Here is some scraped data from the website:\n\n"
             f"Website title: {data.metadata.title}\n"
             f"Description: {data.metadata.description}\n\n"
             f"Content:\n{data.markdown[:20000]}"
         )
-        
-        print("🧠 Parsing scraped content with structured Claude model...")
-        print(f"Data being passed is {data.markdown[:2000]}")
+
+        logger.debug("Parsing scraped content with structured Claude model: %s", data.markdown[:2000])
         extraction: ResearchExtraction = structured_llm.invoke([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ])
 
-        print("✅ Extraction successful!")
+        logger.info(
+            "Research extraction successful: business=%s competitors=%s",
+            extraction.business_name,
+            extraction.competitors,
+        )
 
-        print("Business:", extraction.business_name)
-        print("Description:", extraction.description)
-        print("Competitors:", extraction.competitors)
-        print("Queries:", extraction.core_queries)
-        
         return {
             "business_name": extraction.business_name,
             "description": extraction.description,
@@ -112,8 +129,8 @@ def research(state:AgentState) -> AgentState:
             "core_queries": extraction.core_queries,
             "raw_html": data.raw_html
         }
-    
+
     except Exception as e:
         error_msg = f"LLM response failed for {state['input_url']}: {str(e)}"
-        print(f"❌ {error_msg}")
-        return {"errors": [error_msg]} 
+        logger.error(error_msg)
+        return {"errors": [error_msg]}
