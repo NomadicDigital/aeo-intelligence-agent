@@ -1,8 +1,14 @@
 from state import AgentState
+import logging
 from pydantic import BaseModel, Field
 from typing import List
 from langchain_anthropic import ChatAnthropic
 from pdf_generator import generate_pdf
+
+logger = logging.getLogger(__name__)
+
+MAX_REPORT_ATTEMPTS = 3
+
 
 class ReportOutput(BaseModel):
     overall_score: int = Field(description="Overall AEO score between 0-10 based on the provided initial_score. Do not deviate significantly from the initial_score provided.")
@@ -26,6 +32,22 @@ def generate_initial_score(llms_txt, llms_full_text, schema, robots_txt, prospec
     visbility_optimisation_score = (prospect_visibility_score / 100)*4
     prospect_initial_score += visbility_optimisation_score
     return round(prospect_initial_score)
+
+
+def invoke_structured_report_with_retry(structured_llm, messages, max_attempts=MAX_REPORT_ATTEMPTS):
+    """
+    Claude occasionally omits a required field (e.g. quick_win) from the
+    structured report output, which raises a pydantic validation error.
+    Retry a few times before giving up.
+    """
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return structured_llm.invoke(messages)
+        except Exception as e:
+            last_error = e
+            logger.warning("Structured report extraction attempt %d/%d failed: %s", attempt, max_attempts, e)
+    raise last_error
 
 def report(state:AgentState) -> AgentState:
     """
@@ -74,19 +96,20 @@ def report(state:AgentState) -> AgentState:
         Please generate the report based on this data.
         """
         
-        print("🧠 Passing context data into structured Claude model...")
-        extraction: ReportOutput = structured_llm.invoke([
+        logger.info("Passing context data into structured Claude model")
+        extraction: ReportOutput = invoke_structured_report_with_retry(structured_llm, [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ])
 
-        print("✅ Extraction successful!")
-
-        print("Overall Score", extraction.overall_score)
-        print("Key Improvements:", extraction.key_improvements)
-        print("High Level Summary:", extraction.high_level_summary)
-        print("Visibility Insight:", extraction.visibility_insight)
-        print("Quick Win:", extraction.quick_win)
+        logger.info("Report extraction successful: overall_score=%s", extraction.overall_score)
+        logger.debug(
+            "Report fields: key_improvements=%s high_level_summary=%s visibility_insight=%s quick_win=%s",
+            extraction.key_improvements,
+            extraction.high_level_summary,
+            extraction.visibility_insight,
+            extraction.quick_win,
+        )
 
         result = {
             "overall_score": extraction.overall_score,
@@ -112,10 +135,10 @@ def report(state:AgentState) -> AgentState:
                 prospect_visibility=state.get("prospect_visibility", {}),
                 competitor_visibility=state.get("competitor_visibility", {}),
             )
-            print(f"📄 PDF saved to: {pdf_path}")
+            logger.info("PDF saved to: %s", pdf_path)
             result["pdf_path"] = pdf_path
         except Exception as e:
-            print(f"⚠️ PDF generation failed: {e}")
+            logger.error("PDF generation failed: %s", e)
             result["errors"] = [f"PDF generation failed: {str(e)}"]
 
         return result
@@ -123,11 +146,8 @@ def report(state:AgentState) -> AgentState:
 
     except Exception as e:
         error_msg = f"Report LLM response failed: {str(e)}"
-        print("Error_MSG", error_msg, e)
+        logger.error(error_msg)
         return {
             "overall_score": initial_score,
             "errors": [error_msg]
         }
-
-    
-    

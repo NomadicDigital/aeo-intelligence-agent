@@ -1,33 +1,58 @@
-import sys
-sys.path.insert(0, 'src/aeo_agent')
-
-from pathlib import Path
+from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
 
+import main
 from main import app
 
 client = TestClient(app)
 
-print("\n=== ROOT CHECK ===")
-root_response = client.get("/")
-print("Status:", root_response.status_code)
-print("Body:", root_response.json())
 
-print("\n=== GENERATE REPORT ===")
-response = client.post(
-    "/generate_report",
-    json={"url": "https://www.fallowfieldscamping.com"},
-)
+def test_root():
+    response = client.get("/")
 
-print("Status:", response.status_code)
-print("Content-Type:", response.headers.get("content-type"))
+    assert response.status_code == 200
+    assert response.json() == {"Hello": "World"}
 
-if response.status_code == 200:
-    output_path = Path("reports/test_api_output.pdf")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(response.content)
-    print("Content-Disposition:", response.headers.get("content-disposition"))
-    print("PDF saved to:", output_path)
-else:
-    print("Error detail:", response.json())
+
+def test_generate_report_returns_pdf(monkeypatch, tmp_path):
+    pdf_path = tmp_path / "report.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 fake pdf content")
+
+    monkeypatch.setattr(
+        main.graph_app,
+        "ainvoke",
+        AsyncMock(return_value={"pdf_path": str(pdf_path), "errors": []}),
+    )
+
+    response = client.post("/generate_report", json={"url": "https://example.com"})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.content == b"%PDF-1.4 fake pdf content"
+
+
+def test_generate_report_returns_422_when_no_pdf_produced(monkeypatch):
+    monkeypatch.setattr(
+        main.graph_app,
+        "ainvoke",
+        AsyncMock(return_value={"pdf_path": "", "errors": ["Could not scrape https://example.com"]}),
+    )
+
+    response = client.post("/generate_report", json={"url": "https://example.com"})
+
+    assert response.status_code == 422
+    assert "Could not scrape" in response.json()["detail"]
+
+
+def test_generate_report_returns_502_on_pipeline_crash(monkeypatch):
+    monkeypatch.setattr(
+        main.graph_app,
+        "ainvoke",
+        AsyncMock(side_effect=RuntimeError("graph exploded")),
+    )
+
+    response = client.post("/generate_report", json={"url": "https://example.com"})
+
+    assert response.status_code == 502
+    assert "graph exploded" in response.json()["detail"]
