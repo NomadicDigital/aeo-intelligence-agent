@@ -1,8 +1,11 @@
 from state import AgentState
+import logging
 from typing import Dict
 import requests
 from bs4 import BeautifulSoup
 import json
+
+logger = logging.getLogger(__name__)
 
 AI_CRAWLERS = ["GPTBot", "ClaudeBot", "Google-Extended", "PerplexityBot", "OAI-SearchBot"]
 TIMEOUT_TIME = 10
@@ -60,7 +63,7 @@ def check_robots_txt(input_url) -> Dict:
     
     elif r.status_code != 200:
         error_msg = f"Robots response failed for with status code: {r.status_code}"
-        print(f"❌ {error_msg}")
+        logger.error(error_msg)
         return {
             "robots_txt": {
                 "exists": False
@@ -85,6 +88,8 @@ def check_robots_txt(input_url) -> Dict:
                     allowed_crawlers.append(crawler)
                 elif rule == 'Disallow':
                     blocked_crawlers.append(crawler)
+                else:
+                    unmentioned_crawlers.append(crawler)
         else:
             unmentioned_crawlers.append(crawler)
     return {
@@ -126,7 +131,7 @@ def check_llm_files(input_url, file_name, state_key):
     
     elif r.status_code != 200:
         error_msg = f"{file_name} response failed for with status code: {r.status_code}"
-        print(f"❌ {error_msg}")
+        logger.error(error_msg)
         return {
             f"{state_key}": {
                 "exists": False
@@ -227,7 +232,7 @@ def technical_audit(state:AgentState) -> AgentState:
         **strip_errors(extracted_llms_full_txt),
         **strip_errors(extracted_schema),
     }
-    print(final_update)
+    logger.debug("Technical audit result: %s", final_update)
     if errors:
         final_update["errors"] = errors
     return final_update
