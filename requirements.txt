@@ -9,3 +9,7 @@ python-dotenv
 firecrawl-py
 weasyprint
 jinja2
+fastapi
+uvicorn[standard]
+requests
+beautifulsoup4
