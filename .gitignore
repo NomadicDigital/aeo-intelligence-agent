@@ -44,6 +44,9 @@ outputs/
 reports/
 exports/
 
+# Experiments
+experiments/
+
 # Data
 data/raw/*
 data/processed/*
