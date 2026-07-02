@@ -1,0 +1,27 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aeo-intelligence-agent/app:$COMMIT_SHA'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aeo-intelligence-agent/app:$COMMIT_SHA'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'aeo-intelligence-agent'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/aeo-intelligence-agent/app:$COMMIT_SHA'
+      - '--region=europe-west1'
+      - '--platform=managed'
+      - '--set-secrets=FIRECRAWL_API_KEY=FIRECRAWL_API_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,INTERNAL_API_KEY=INTERNAL_API_KEY:latest,LANGSMITH_API_KEY=LANGSMITH_API_KEY:latest'
+      - '--set-env-vars=LANGSMITH_TRACING=true,LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com'
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aeo-intelligence-agent/app:$COMMIT_SHA'
