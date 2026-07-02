@@ -1,0 +1,23 @@
+# Environment — never bake secrets into the image
+.env
+
+# Virtual environment — Docker installs its own
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git/
+.gitignore
+
+# Generated reports — not needed in the image
+reports/
+
+# Dev only
+experiments/
+tests/
+docs/
+.DS_Store
