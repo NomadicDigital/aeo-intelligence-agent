@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -37,7 +38,7 @@ def generate_pdf(
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
     improvements = [
-        line.strip()
+        re.sub(r"^\d+[\.\)]\s*", "", line.strip())
         for line in key_improvements.splitlines()
         if line.strip()
     ]

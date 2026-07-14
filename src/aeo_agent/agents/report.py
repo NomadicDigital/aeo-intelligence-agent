@@ -1,7 +1,6 @@
 from state import AgentState
 import logging
 from pydantic import BaseModel, Field
-from typing import List
 from langchain_anthropic import ChatAnthropic
 from pdf_generator import generate_pdf
 
@@ -67,7 +66,7 @@ def report(state:AgentState) -> AgentState:
     )
 
     try:
-        llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0.3, max_tokens=4000)
+        llm = ChatAnthropic(model="claude-sonnet-5", max_tokens=4000)
         structured_llm = llm.with_structured_output(ReportOutput)
         system_prompt = (
                 """
