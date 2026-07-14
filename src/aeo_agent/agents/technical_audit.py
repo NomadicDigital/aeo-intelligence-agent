@@ -1,5 +1,6 @@
 from state import AgentState
 import logging
+import re
 from typing import Dict
 import requests
 from bs4 import BeautifulSoup
@@ -11,25 +12,45 @@ AI_CRAWLERS = ["GPTBot", "ClaudeBot", "Google-Extended", "PerplexityBot", "OAI-S
 TIMEOUT_TIME = 10
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
 
+def strip_comments(robots_txt_contents: str) -> str:
+    """
+    Function for stripping commented out lines from the Robots.txt file
+    """
+    lines = [l for l in robots_txt_contents.splitlines() if not l.strip().startswith('#')]
+    return '\n'.join(lines)
+
+
 def find_robot_rule(agent, robots_txt_contents) -> str:
     """
-    Function for finding the current rule (Allow or Disallow) for a user_agent in a 
+    Function for finding the current rule (Allow or Disallow) for a user_agent in a
     Robots.txt files contents. Returning the string.
+
+    Only returns "Disallow" for a full site block (Disallow: /).
+    Partial path disallows mean the crawler can still access the rest of the
+    site, so those are treated as "Allow".
     """
+    cleaned = strip_comments(robots_txt_contents)
     user_agent = f"User-agent: {agent}"
-    start = robots_txt_contents.find(f"{user_agent}")
+    start = cleaned.find(user_agent)
     if start == -1:
         return "Unknown"
-    else:
-        section = robots_txt_contents[start:]
-        lines = section.split('\n')
-        rule = lines[1]
-        if "Allow" in rule:
+    section = cleaned[start:]
+    lines = [l for l in section.split('\n') if l.strip()]
+    # Collect all rules for this agent block, stopping at the next User-agent stanza
+    rules = []
+    for line in lines[1:]:
+        if line.strip().lower().startswith("user-agent"):
+            break
+        rules.append(line.strip())
+    for rule in rules:
+        if re.match(r'(?i)disallow:\s*/$', rule):
+            return "Disallow"  # full site block
+        if re.match(r'(?i)allow:\s*/', rule):
             return "Allow"
-        elif "Disallow" in rule:
-            return "Disallow"
-        else:
-            return "Unknown"
+    # Partial disallows only — crawler can still access most of the site
+    if any(re.match(r'(?i)disallow:', r) for r in rules):
+        return "Allow"
+    return "Unknown"
 
 
 def check_robots_txt(input_url) -> Dict:
@@ -72,7 +93,7 @@ def check_robots_txt(input_url) -> Dict:
         }
 
     # Step 3: If exists, check each AI crawler
-    robots_txt_contents = r.text
+    robots_txt_contents = strip_comments(r.text)
     for crawler in AI_CRAWLERS:
         if f"User-agent: {crawler}" in robots_txt_contents:
             rule = find_robot_rule(crawler, robots_txt_contents)
