@@ -57,21 +57,24 @@
 
     /* ── Score band ── */
     .score-band {
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 60%, #818cf8 100%);
       border-radius: 10px;
-      padding: 22px 28px;
+      padding: 20px 24px;
       display: flex;
       align-items: center;
-      gap: 28px;
-      margin-bottom: 24px;
+      gap: 24px;
+      margin-bottom: 20px;
       color: #fff;
+      break-inside: avoid;
     }
+    .score-band-low  { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+    .score-band-mid  { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+    .score-band-high { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
     .score-circle {
-      width: 84px;
-      height: 84px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.12);
-      border: 2px solid rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.45);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -80,8 +83,8 @@
     }
     .score-number { font-size: 30px; font-weight: 700; line-height: 1; }
     .score-denom  { font-size: 11px; opacity: 0.7; margin-top: 2px; }
-    .score-text h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .score-text p  { font-size: 12px; opacity: 0.92; line-height: 1.55; max-width: 540px; }
+    .score-text h2 { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+    .score-text p  { font-size: 11.5px; opacity: 0.93; line-height: 1.5; max-width: 540px; }
 
     /* ── Two-column grid ── */
     .grid {
@@ -89,6 +92,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 16px;
       margin-bottom: 16px;
+      break-inside: avoid;
     }
 
     /* ── Cards ── */
@@ -96,6 +100,7 @@
       border: 1px solid #e5e7eb;
       border-radius: 8px;
       padding: 16px 18px;
+      break-inside: avoid;
     }
     .card-title {
       font-size: 10px;
@@ -162,11 +167,12 @@
       font-size: 12px;
       color: #374151;
       line-height: 1.55;
+      break-inside: avoid;
     }
     .insight-card .card-title { color: #5b21b6; border-bottom-color: #ede9fe; }
 
     /* ── Key improvements ── */
-    .improvements-card { margin-bottom: 16px; }
+    .improvements-card { margin-bottom: 16px; break-inside: avoid; }
     .improvement-item {
       display: flex;
       gap: 12px;
@@ -200,6 +206,7 @@
       border-radius: 8px;
       padding: 13px 16px;
       margin-bottom: 28px;
+      break-inside: avoid;
     }
     .quick-win-card .card-title { color: #92400e; border-bottom-color: #fef3c7; }
     .quick-win-card p { font-size: 12px; line-height: 1.55; color: #374151; }
@@ -221,6 +228,7 @@
     .footer-right {
       font-size: 10.5px;
       color: #6b7280;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -248,7 +256,7 @@
   <div class="body">
 
     <!-- Score + Summary -->
-    <div class="score-band">
+    <div class="score-band {% if overall_score >= 7 %}score-band-high{% elif overall_score >= 4 %}score-band-mid{% else %}score-band-low{% endif %}">
       <div class="score-circle">
         <span class="score-number">{{ overall_score }}</span>
         <span class="score-denom">/ 10</span>
