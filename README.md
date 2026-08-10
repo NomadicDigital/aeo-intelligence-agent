@@ -2,11 +2,11 @@
 
 **Automated agentic AI search visibility auditing — from a URL to a scored PDF report**
 
-![Nomadic Digital](assets/nomadic-logo.png)
+<img src="assets/nomadic-logo.png" alt="Nomadic Digital Logo" height="80" />
 
 ---
 
-## Example Output
+## Example Output
 
 ![Example Audit - RSC](assets/example-audit-output.png)
 
