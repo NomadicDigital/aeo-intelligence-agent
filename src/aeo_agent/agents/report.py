@@ -1,5 +1,6 @@
 from state import AgentState
 import logging
+from typing import List
 from pydantic import BaseModel, Field
 from langchain_anthropic import ChatAnthropic
 from pdf_generator import generate_pdf
@@ -9,9 +10,14 @@ logger = logging.getLogger(__name__)
 MAX_REPORT_ATTEMPTS = 3
 
 
+class KeyImprovement(BaseModel):
+    title: str = Field(description="A punchy 3-6 word title for this improvement")
+    description: str = Field(description="1-2 sentence explanation of the improvement and its impact on AEO visibility")
+
+
 class ReportOutput(BaseModel):
     overall_score: int = Field(description="Overall AEO score between 0-10 based on the provided initial_score. Do not deviate significantly from the initial_score provided.")
-    key_improvements: str = Field(description="The top 3 key improvements the website can make to improve AEO, as a formatted string with each improvement on a new line.")
+    key_improvements: List[KeyImprovement] = Field(description="Exactly 3 key improvements the website can make to improve AEO, ranked by impact.")
     high_level_summary: str = Field(description="1 concise paragraph giving a high level summary of the information in the report and the brand's overall performance")
     visibility_insight: str = Field(description="1 sentence comparing the prospect's visibility to the competitor's")
     quick_win: str = Field(description="Identify and concisely describe the single most impactful thing the client do today to improve AEO performance")
