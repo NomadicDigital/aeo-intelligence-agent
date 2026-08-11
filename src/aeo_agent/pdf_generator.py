@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +23,7 @@ def generate_pdf(
     input_url: str,
     overall_score: int,
     high_level_summary: str,
-    key_improvements: str,
+    key_improvements: list,
     visibility_insight: str,
     quick_win: str,
     robots_txt: dict,
@@ -37,13 +36,21 @@ def generate_pdf(
     """Render the Jinja2 HTML template and write a PDF. Returns the output file path."""
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    improvements = [
-        re.sub(r"^\d+[\.\)]\s*", "", line.strip())
-        for line in key_improvements.splitlines()
-        if line.strip()
+    prospect_score = round(prospect_visibility.get("total_prospect_score", 0))
+    query_count = len(prospect_visibility.get("query_breakdown", {}))
+
+    sorted_competitors = sorted(competitor_visibility.items(), key=lambda item: item[1], reverse=True)
+    competitor_bars = [
+        (name, round(score), max(round(score), 2) if round(score) == 0 else round(score))
+        for name, score in sorted_competitors
     ]
 
-    prospect_score = round(prospect_visibility.get("total_prospect_score", 0))
+    if overall_score >= 7:
+        score_verdict = "Strong AEO foundation"
+    elif overall_score >= 4:
+        score_verdict = "Partial visibility — room to grow"
+    else:
+        score_verdict = "Significant visibility gaps"
 
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
     template = env.get_template("report.html")
@@ -51,8 +58,10 @@ def generate_pdf(
         business_name=business_name,
         input_url=input_url,
         overall_score=overall_score,
+        score_percent=round(overall_score / 10 * 100),
+        score_verdict=score_verdict,
         high_level_summary=high_level_summary,
-        improvements=improvements,
+        improvements=key_improvements,
         visibility_insight=visibility_insight,
         quick_win=quick_win,
         robots_txt=robots_txt,
@@ -60,7 +69,8 @@ def generate_pdf(
         llms_full_txt=llms_full_txt,
         schema=schema,
         prospect_score=prospect_score,
-        competitor_visibility=competitor_visibility,
+        query_count=query_count,
+        competitor_bars=competitor_bars,
         generated_date=datetime.now().strftime("%d %B %Y"),
     )
 

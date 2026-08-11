@@ -29,7 +29,7 @@ class AgentState(TypedDict):
     # Report Agent
     overall_score: int
     high_level_summary: str
-    key_improvements: List[str]
+    key_improvements: List[Dict[str, str]]
     visibility_insight: str
     quick_win: str
     pdf_path: str
