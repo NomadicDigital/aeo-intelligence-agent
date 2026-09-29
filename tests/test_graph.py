@@ -1,13 +1,10 @@
-from langgraph.graph import END, StateGraph
-
-from graph import route_after_research
-from state import AgentState
+from graph import build_graph
 
 
 def _build_stub_graph(call_log):
     """
-    Builds a graph with the real routing function but stub nodes, so the
-    fan-out/fan-in topology can be asserted without touching any external API.
+    Builds the real graph from graph.py with stub nodes, so the fan-out/fan-in
+    topology can be asserted without touching any external API.
     """
     def stub_research(state):
         call_log.append("research")
@@ -25,20 +22,12 @@ def _build_stub_graph(call_log):
         call_log.append("report")
         return {"overall_score": 5}
 
-    g = StateGraph(AgentState)
-    g.add_node("research", stub_research)
-    g.add_node("technical_audit", stub_technical_audit)
-    g.add_node("visibility_analysis", stub_visibility_analysis)
-    g.add_node("report", stub_report)
-    g.set_entry_point("research")
-    g.add_conditional_edges(
-        "research",
-        route_after_research,
-        ["technical_audit", "visibility_analysis", "report"],
+    return build_graph(
+        research_node=stub_research,
+        technical_audit_node=stub_technical_audit,
+        visibility_analysis_node=stub_visibility_analysis,
+        report_node=stub_report,
     )
-    g.add_edge(["technical_audit", "visibility_analysis"], "report")
-    g.add_edge("report", END)
-    return g.compile()
 
 
 def _base_state(**overrides):
