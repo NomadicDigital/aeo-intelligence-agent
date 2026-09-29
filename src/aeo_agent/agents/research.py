@@ -14,6 +14,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUSES = {408, 429, 500, 502, 503, 504}
+MAX_SCRAPE_RETRIES = 5
 
 _crawler_app = None
 
@@ -34,18 +35,17 @@ class ResearchExtraction(BaseModel):
     competitors: List[str] = Field(description="Identify 3-5 key competitors in their space based on the scraped content.")
     core_queries: List[str] = Field(description="List 5-8 conversational search queries prospects would use to find this service on LLMS. Do not mention the brand, instead let it be non-branded queries. (e.g., 'What is the best custom software agency in London?')")
 
-def request_with_retry(url, max_attempts=5):
+def request_with_retry(url, max_retries=MAX_SCRAPE_RETRIES):
     """
-    Scrapes the URL using FirecrawlApp with custom exponential backoff, retry limits,
-    and jitter to safely bypass rate limits and transient server failures.
+    Re-scrapes the URL after a retryable status, waiting with exponential backoff
+    and jitter before each attempt. Firecrawl's Document doesn't expose the target
+    site's response headers, so a Retry-After header can't be honoured here.
     """
-    for attempt in range(max_attempts):
+    for attempt in range(max_retries):
+        time.sleep(min(2 ** attempt, 30) + random.random())
         resp = get_crawler_app().scrape(url, formats=['markdown', 'rawHtml'])
-        if resp.metadata.status_code < 400 or resp.metadata.status_code not in RETRYABLE_STATUSES:
+        if resp.metadata.status_code not in RETRYABLE_STATUSES:
             return resp
-        retry_after = resp.headers.get("Retry-After")
-        delay = float(retry_after) if retry_after else min(2 ** attempt, 30) + random.random()
-        time.sleep(delay)
     return resp
 
 def scrape_url(url) -> str:
