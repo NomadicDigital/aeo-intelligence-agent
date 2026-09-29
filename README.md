@@ -66,7 +66,7 @@ Four LangGraph nodes. `technical_audit` and `visibility_analysis` fan out from `
 | Auth | X-API-Key header, CORS allowlist |
 | Containerisation | Docker (python:3.14-slim) |
 | Deployment | Google Cloud Run (scale-to-zero) |
-| CI/CD | Google Cloud Build (push-to-main trigger) |
+| CI/CD | Google Cloud Build (push-to-main trigger: test → build → deploy) |
 | Secrets | GCP Secret Manager |
 | Observability | LangSmith (EU endpoint) |
 | Frontend | Astro + Netlify Functions (server-side API key proxy) |
@@ -150,7 +150,7 @@ tests/
 ├── test_visibility_analysis.py # Visibility agent unit tests
 └── test_pipeline_smoke.py      # Full end-to-end smoke test (excluded from CI)
 Dockerfile                      # python:3.14-slim + pango
-cloudbuild.yaml                 # Build → push → Cloud Run deploy
+cloudbuild.yaml                 # Test → build → push → Cloud Run deploy
 ```
 
 ---
