@@ -44,7 +44,7 @@ Four LangGraph nodes. `technical_audit` and `visibility_analysis` fan out from `
 
 ### What each agent does
 
-**research** — Scrapes the target URL via Firecrawl, uses Claude to extract business name, description, and key competitors, and generates 5 AEO-relevant test queries tailored to the business.
+**research** — Scrapes the target URL via Firecrawl, uses Claude to extract business name, description, and key competitors, and generates 5–8 non-branded test queries a prospect might ask an AI assistant.
 
 **technical_audit** — Checks `robots.txt` for explicit AI crawler rules across 5 major bots (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, OAI-SearchBot); probes for `llms.txt` and `llms-full.txt`; parses structured schema markup (JSON-LD) from raw HTML.
 
@@ -93,11 +93,11 @@ Secrets (API keys, internal auth token) are injected at runtime from GCP Secret 
 
 **1. LangGraph fan-out / fan-in race condition**
 
-LangGraph's `add_conditional_edges` returns a list of node names to enable true parallel execution. An early version had duplicate `technical_audit → report` and `visibility_analysis → report` edges defined twice — once in the conditional return and once as explicit `add_edge` calls. This caused the report node to fire as soon as the *first* branch completed, silently discarding whichever branch finished second. Fixed by auditing the graph topology and ensuring each fan-in edge is declared exactly once.
+An early version chained the analysis nodes (`technical_audit → visibility_analysis → report`) but also kept a direct `technical_audit → report` edge. The report node fired as soon as the technical audit finished, before visibility analysis had run, and nothing errored. The first fix removed the stray edge, which left the pipeline sequential. The second restored real parallelism: the router after research returns a list of node names, so both analysis nodes run in the same step, and a single list-based edge (`add_edge(["technical_audit", "visibility_analysis"], "report")`) makes report wait for both. Separate edges into report would also work while each branch is one node, but if a branch grew to two nodes, report would fire early and then run again. A topology test runs the real graph with stub nodes and asserts each node runs exactly once.
 
 **2. WeasyPrint's system-level pango dependency**
 
-WeasyPrint requires `libpango` for PDF rendering — it is not a pip dependency and is not bundled with the wheel. On macOS, this required setting `DYLD_LIBRARY_PATH=/opt/homebrew/lib` *before* the WeasyPrint import (the dynamic linker reads it at import time, not at call time). On Linux/Docker, it required `apt-get install libpango-1.0-0 libpangoft2-1.0-0` in the Dockerfile's build stage. Neither failure mode produces a helpful error message — both surface as cryptic `OSError: cannot load library` crashes.
+WeasyPrint requires `libpango` for PDF rendering — it is not a pip dependency and is not bundled with the wheel. On macOS, this required setting `DYLD_LIBRARY_PATH=/opt/homebrew/lib` *before* the WeasyPrint import (the dynamic linker reads it at import time, not at call time). On Linux/Docker, it required `apt-get install libpango-1.0-0 libpangoft2-1.0-0` in the Dockerfile. Neither failure mode produces a helpful error message — both surface as cryptic `OSError: cannot load library` crashes.
 
 **3. Cloud Run module resolution**
 
@@ -105,11 +105,11 @@ The FastAPI app lives at `src/aeo_agent/main.py` and uses bare imports (`from gr
 
 **4. CI/CD auth without service account keys**
 
-The first CI/CD approach (GitHub Actions + Workload Identity Federation) was blocked by a GCP org policy that prevented external identity providers from being trusted. Switching to Google Cloud Build resolved this immediately: Cloud Build runs inside GCP and inherits the Cloud Build service account's IAM roles without requiring any credential configuration. The trigger fires on every push to `main` and deploys to Cloud Run in the same step.
+The first pipeline ran on GitHub Actions and authenticated to GCP with a service account JSON key stored as a GitHub secret. It was replaced with Google Cloud Build, which runs inside GCP under the Cloud Build service account, so no key is stored outside GCP. The trigger fires on every push to `main`, runs the tests, then builds and deploys to Cloud Run.
 
 **5. Using the LLM as the measurement instrument**
 
-Measuring AI visibility means asking: *does this AI mention my client when answering a relevant question?* The most direct way to test that is to actually ask the AI. The `visibility_analysis` agent fires each query against Claude and checks for brand name mentions in the response. This is deliberately naïve — it measures one model, not all answer engines — but it is the only approach that captures the real signal (what the AI says) rather than a proxy (crawl access, structured data). The limitation is documented in the report output.
+Measuring AI visibility means asking: *does this AI mention my client when answering a relevant question?* The most direct way to test that is to actually ask the AI. The `visibility_analysis` agent fires each query against Claude and checks for brand name mentions in the response. This is deliberately naïve — it measures one model, not all answer engines — but it is the only approach that captures the real signal (what the AI says) rather than a proxy (crawl access, structured data). The limitation is stated here but not yet in the PDF itself.
 
 ---
 
