@@ -52,6 +52,7 @@ def test_generate_report_returns_pdf(monkeypatch, tmp_path):
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/pdf"
     assert response.content == b"%PDF-1.4 fake pdf content"
+    assert not pdf_path.exists()
 
 
 def test_generate_report_returns_422_when_no_pdf_produced(monkeypatch):
