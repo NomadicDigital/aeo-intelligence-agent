@@ -59,7 +59,7 @@ Four LangGraph nodes. `technical_audit` and `visibility_analysis` fan out from `
 | Layer | Technology |
 |---|---|
 | Orchestration | [LangGraph](https://github.com/langchain-ai/langgraph) |
-| LLM | Claude Haiku via LangChain Anthropic |
+| LLM | Claude Haiku 4.5 (research, visibility) and Sonnet 5 (report) via LangChain Anthropic |
 | Web scraping | [Firecrawl](https://firecrawl.dev) |
 | PDF generation | WeasyPrint + Jinja2 |
 | API | FastAPI + Pydantic |
