@@ -63,9 +63,10 @@ graph.add_conditional_edges(
 # Stage 4: Fan-In / Report Generation
 # --------------------------------------------------
 
-# Wait for both parallel branches to complete before generating the report
-graph.add_edge("technical_audit", "report")
-graph.add_edge("visibility_analysis", "report")
+# Wait for both parallel branches to complete before generating the report.
+# A list of start nodes creates an explicit join, so report still runs once
+# even if one branch grows to more than one node.
+graph.add_edge(["technical_audit", "visibility_analysis"], "report")
 
 
 # --------------------------------------------------

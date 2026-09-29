@@ -36,8 +36,7 @@ def _build_stub_graph(call_log):
         route_after_research,
         ["technical_audit", "visibility_analysis", "report"],
     )
-    g.add_edge("technical_audit", "report")
-    g.add_edge("visibility_analysis", "report")
+    g.add_edge(["technical_audit", "visibility_analysis"], "report")
     g.add_edge("report", END)
     return g.compile()
 
