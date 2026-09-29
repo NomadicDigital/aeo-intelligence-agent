@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+from firecrawl.v2.types import Document, DocumentMetadata
+
 from agents import research as research_module
 from agents.research import research
 
@@ -12,6 +14,24 @@ def _scrape_response(markdown="content", raw_html="<html></html>", status_code=2
     resp.markdown = markdown
     resp.raw_html = raw_html
     return resp
+
+
+def _document(status_code=200):
+    """
+    A real Firecrawl Document rather than a MagicMock, so the code under test
+    can only use attributes the SDK actually provides.
+    """
+    return Document(
+        markdown="content",
+        raw_html="<html></html>",
+        metadata=DocumentMetadata(status_code=status_code, title="Biz", description="desc"),
+    )
+
+
+def _stub_sleep(monkeypatch):
+    delays = []
+    monkeypatch.setattr(research_module.time, "sleep", delays.append)
+    return delays
 
 
 def _stub_crawler(monkeypatch, scrape=None):
@@ -85,3 +105,36 @@ def test_research_returns_error_when_llm_fails(monkeypatch):
 
     assert "errors" in result
     assert "llm down" in result["errors"][0]
+
+
+def test_research_retries_retryable_status_with_backoff(monkeypatch):
+    crawler = _stub_crawler(
+        monkeypatch,
+        scrape=MagicMock(side_effect=[_document(503), _document(503), _document(200)]),
+    )
+    delays = _stub_sleep(monkeypatch)
+    _stub_llm(monkeypatch, extraction=MagicMock(
+        business_name="Acme Co",
+        description="A widget maker",
+        competitors=["Widget Corp"],
+        core_queries=["best widget maker"],
+    ))
+
+    result = research({"input_url": "https://example.com"})
+
+    assert "errors" not in result
+    assert result["business_name"] == "Acme Co"
+    assert crawler.scrape.call_count == 3
+    assert len(delays) == 2
+    assert delays[0] < delays[1]
+
+
+def test_research_gives_up_after_max_retries(monkeypatch):
+    crawler = _stub_crawler(monkeypatch, scrape=MagicMock(return_value=_document(503)))
+    delays = _stub_sleep(monkeypatch)
+
+    result = research({"input_url": "https://example.com"})
+
+    assert "Could not scrape" in result["errors"][0]
+    assert crawler.scrape.call_count == 1 + research_module.MAX_SCRAPE_RETRIES
+    assert len(delays) == research_module.MAX_SCRAPE_RETRIES
