@@ -1,4 +1,12 @@
 steps:
+  # Run the test suite first; a failing test stops the build before deploy.
+  # Tests mock every external API, so no secrets are needed here.
+  - name: 'python:3.14-slim'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'apt-get update && apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 && pip install --no-cache-dir -r requirements-dev.txt && python -m pytest -q'
+
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'

@@ -7,25 +7,6 @@ from agents.technical_audit import technical_audit
 from agents.visibility_analysis import visibility_analysis
 from agents.report import report
 
-# Define AgentState schema
-
-graph = StateGraph(AgentState)
-
-# --------------------------------------------------
-# Nodes
-# --------------------------------------------------
-
-graph.add_node('research', research)
-graph.add_node('technical_audit', technical_audit)
-graph.add_node('visibility_analysis', visibility_analysis)
-graph.add_node('report', report)
-
-# --------------------------------------------------
-# Stage 1: Entry Point
-# --------------------------------------------------
-
-graph.set_entry_point('research')
-
 # --------------------------------------------------
 # Stage 2: Research Validation
 # --------------------------------------------------
@@ -46,31 +27,62 @@ def route_after_research(state:AgentState) -> List[str]:
     else:
         return ["technical_audit", "visibility_analysis"]
 
-# --------------------------------------------------
-# Stage 3: Parallel Analysis
-# --------------------------------------------------
 
-# Run Technical Audit and Visibility Analysis
-# in parallel by fanning out from research to both nodes
+def build_graph(
+    research_node=research,
+    technical_audit_node=technical_audit,
+    visibility_analysis_node=visibility_analysis,
+    report_node=report,
+):
+    """
+    Wires up and compiles the pipeline. The node functions are parameters so
+    tests can run the real topology with stub nodes and no external API calls.
+    """
+    graph = StateGraph(AgentState)
 
-graph.add_conditional_edges(
-    "research",
-    route_after_research,
-    ["technical_audit", "visibility_analysis", "report"]
-)
+    # --------------------------------------------------
+    # Nodes
+    # --------------------------------------------------
 
-# --------------------------------------------------
-# Stage 4: Fan-In / Report Generation
-# --------------------------------------------------
+    graph.add_node('research', research_node)
+    graph.add_node('technical_audit', technical_audit_node)
+    graph.add_node('visibility_analysis', visibility_analysis_node)
+    graph.add_node('report', report_node)
 
-# Wait for both parallel branches to complete before generating the report
-graph.add_edge("technical_audit", "report")
-graph.add_edge("visibility_analysis", "report")
+    # --------------------------------------------------
+    # Stage 1: Entry Point
+    # --------------------------------------------------
+
+    graph.set_entry_point('research')
+
+    # --------------------------------------------------
+    # Stage 3: Parallel Analysis
+    # --------------------------------------------------
+
+    # Run Technical Audit and Visibility Analysis
+    # in parallel by fanning out from research to both nodes
+
+    graph.add_conditional_edges(
+        "research",
+        route_after_research,
+        ["technical_audit", "visibility_analysis", "report"]
+    )
+
+    # --------------------------------------------------
+    # Stage 4: Fan-In / Report Generation
+    # --------------------------------------------------
+
+    # Wait for both parallel branches to complete before generating the report.
+    # A list of start nodes creates an explicit join, so report still runs once
+    # even if one branch grows to more than one node.
+    graph.add_edge(["technical_audit", "visibility_analysis"], "report")
+
+    # --------------------------------------------------
+    # Stage 5: End
+    # --------------------------------------------------
+
+    graph.add_edge("report", END)
+    return graph.compile()
 
 
-# --------------------------------------------------
-# Stage 5: End
-# --------------------------------------------------
-
-graph.add_edge("report", END)
-app = graph.compile()
+app = build_graph()

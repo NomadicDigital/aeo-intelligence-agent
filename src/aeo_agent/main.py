@@ -8,6 +8,7 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, HttpUrl
 
@@ -91,8 +92,12 @@ async def generate_report(request: ReportRequest, _ = Security(require_api_key))
         errors = result.get("errors") or ["Report generation did not produce a PDF."]
         raise HTTPException(status_code=422, detail="; ".join(errors))
 
+    # Reports are single-use: delete the PDF once it has been sent. On Cloud Run
+    # the filesystem is in memory, so leftover files would grow until the
+    # instance restarts.
     return FileResponse(
         path=pdf_path,
         media_type="application/pdf",
         filename=Path(pdf_path).name,
+        background=BackgroundTask(os.remove, pdf_path),
     )

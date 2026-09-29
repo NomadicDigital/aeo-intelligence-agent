@@ -17,6 +17,33 @@ def test_generate_initial_score_combines_signals():
     assert score == 8
 
 
+def test_generate_initial_score_gives_no_robots_points_when_all_ai_crawlers_blocked():
+    score = generate_initial_score(
+        llms_txt=False,
+        llms_full_text=False,
+        schema=False,
+        robots_txt=True,
+        prospect_visibility_score=0,
+        blocked_ai_crawlers=5,
+    )
+
+    assert score == 0
+
+
+def test_generate_initial_score_scales_robots_points_by_crawlers_allowed():
+    score = generate_initial_score(
+        llms_txt=False,
+        llms_full_text=False,
+        schema=True,
+        robots_txt=True,
+        prospect_visibility_score=0,
+        blocked_ai_crawlers=1,
+    )
+
+    # 3 (schema) + 2 * 4/5 (robots, 4 of 5 AI crawlers allowed) = 4.6 -> 5
+    assert score == 5
+
+
 def _extraction(**overrides):
     defaults = dict(
         overall_score=5,
@@ -45,6 +72,8 @@ def _base_state(**overrides):
     state = {
         "business_name": "Acme Co",
         "description": "Widgets",
+        "competitors": ["Widget Corp"],
+        "core_queries": ["best widget maker"],
         "input_url": "https://example.com",
         "robots_txt": {"exists": True},
         "llms_txt": {"exists": False},
@@ -100,3 +129,16 @@ def test_report_captures_pdf_generation_failure(monkeypatch):
     assert "pdf_path" not in result
     assert "errors" in result
     assert "weasyprint failed" in result["errors"][0]
+
+
+def test_report_skips_llm_and_pdf_when_research_failed(monkeypatch):
+    structured_llm = _stub_llm(monkeypatch, extraction=_extraction())
+    generate_pdf = MagicMock(return_value="/tmp/report.pdf")
+    monkeypatch.setattr(report_module, "generate_pdf", generate_pdf)
+
+    result = report(_base_state(business_name="", competitors=[]))
+
+    structured_llm.invoke.assert_not_called()
+    generate_pdf.assert_not_called()
+    assert "pdf_path" not in result
+    assert "research did not return" in result["errors"][0]

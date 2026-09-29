@@ -4,6 +4,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from langchain_anthropic import ChatAnthropic
 from pdf_generator import generate_pdf
+from agents.technical_audit import AI_CRAWLERS
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class ReportOutput(BaseModel):
     visibility_insight: str = Field(description="1 sentence comparing the prospect's visibility to the competitor's")
     quick_win: str = Field(description="Identify and concisely describe the single most impactful thing the client do today to improve AEO performance")
 
-def generate_initial_score(llms_txt, llms_full_text, schema, robots_txt, prospect_visibility_score):
+def generate_initial_score(llms_txt, llms_full_text, schema, robots_txt, prospect_visibility_score, blocked_ai_crawlers=0):
     """
     This function generates an initial score based on the outputs from the Technical Audit & Visbility analysis
     agents
@@ -33,7 +34,9 @@ def generate_initial_score(llms_txt, llms_full_text, schema, robots_txt, prospec
     if schema:
         prospect_initial_score+=3
     if robots_txt:
-        prospect_initial_score+=2
+        # Only award the robots.txt points for AI crawlers it lets in
+        allowed_share = (len(AI_CRAWLERS) - blocked_ai_crawlers) / len(AI_CRAWLERS)
+        prospect_initial_score+=2 * allowed_share
     visbility_optimisation_score = (prospect_visibility_score / 100)*4
     prospect_initial_score += visbility_optimisation_score
     return round(prospect_initial_score)
@@ -62,13 +65,20 @@ def report(state:AgentState) -> AgentState:
     
     errors = []
 
+    # Step 0: Research failed, so there is nothing to report on. Return without a
+    # PDF so the API responds with a 422 rather than an empty report.
+    research_fields = ('business_name', 'description', 'competitors', 'core_queries')
+    if not all(state.get(field) for field in research_fields):
+        return {"errors": ["Report skipped: research did not return the business details."]}
+
     # Step 1: Generate initial score
     initial_score = generate_initial_score(
         state.get('llms_txt', {}).get('exists', False),
         state.get('llms_full_txt', {}).get('exists', False),
         state.get('schema', {}).get('exists', False),
         state.get('robots_txt', {}).get('exists', False),
-        state.get('prospect_visibility', {}).get('total_prospect_score', 0)
+        state.get('prospect_visibility', {}).get('total_prospect_score', 0),
+        len(state.get('robots_txt', {}).get('blocked_ai_crawlers', [])),
     )
 
     try:
