@@ -45,6 +45,8 @@ def _base_state(**overrides):
     state = {
         "business_name": "Acme Co",
         "description": "Widgets",
+        "competitors": ["Widget Corp"],
+        "core_queries": ["best widget maker"],
         "input_url": "https://example.com",
         "robots_txt": {"exists": True},
         "llms_txt": {"exists": False},
@@ -100,3 +102,16 @@ def test_report_captures_pdf_generation_failure(monkeypatch):
     assert "pdf_path" not in result
     assert "errors" in result
     assert "weasyprint failed" in result["errors"][0]
+
+
+def test_report_skips_llm_and_pdf_when_research_failed(monkeypatch):
+    structured_llm = _stub_llm(monkeypatch, extraction=_extraction())
+    generate_pdf = MagicMock(return_value="/tmp/report.pdf")
+    monkeypatch.setattr(report_module, "generate_pdf", generate_pdf)
+
+    result = report(_base_state(business_name="", competitors=[]))
+
+    structured_llm.invoke.assert_not_called()
+    generate_pdf.assert_not_called()
+    assert "pdf_path" not in result
+    assert "research did not return" in result["errors"][0]

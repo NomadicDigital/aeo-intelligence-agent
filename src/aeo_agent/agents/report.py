@@ -62,6 +62,12 @@ def report(state:AgentState) -> AgentState:
     
     errors = []
 
+    # Step 0: Research failed, so there is nothing to report on. Return without a
+    # PDF so the API responds with a 422 rather than an empty report.
+    research_fields = ('business_name', 'description', 'competitors', 'core_queries')
+    if not all(state.get(field) for field in research_fields):
+        return {"errors": ["Report skipped: research did not return the business details."]}
+
     # Step 1: Generate initial score
     initial_score = generate_initial_score(
         state.get('llms_txt', {}).get('exists', False),
