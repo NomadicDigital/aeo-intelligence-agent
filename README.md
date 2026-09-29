@@ -160,7 +160,7 @@ cloudbuild.yaml                 # Build → push → Cloud Run deploy
 **1. Install dependencies**
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # app dependencies + pytest
 brew install pango          # macOS only — required by WeasyPrint
 ```
 
