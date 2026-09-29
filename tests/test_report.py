@@ -17,6 +17,33 @@ def test_generate_initial_score_combines_signals():
     assert score == 8
 
 
+def test_generate_initial_score_gives_no_robots_points_when_all_ai_crawlers_blocked():
+    score = generate_initial_score(
+        llms_txt=False,
+        llms_full_text=False,
+        schema=False,
+        robots_txt=True,
+        prospect_visibility_score=0,
+        blocked_ai_crawlers=5,
+    )
+
+    assert score == 0
+
+
+def test_generate_initial_score_scales_robots_points_by_crawlers_allowed():
+    score = generate_initial_score(
+        llms_txt=False,
+        llms_full_text=False,
+        schema=True,
+        robots_txt=True,
+        prospect_visibility_score=0,
+        blocked_ai_crawlers=1,
+    )
+
+    # 3 (schema) + 2 * 4/5 (robots, 4 of 5 AI crawlers allowed) = 4.6 -> 5
+    assert score == 5
+
+
 def _extraction(**overrides):
     defaults = dict(
         overall_score=5,
